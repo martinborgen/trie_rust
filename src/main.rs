@@ -1,64 +1,106 @@
-use std::{default, process::Child, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 // This is only for lowercase a-z at the moment.
 struct TrieNode<String> {
-    children: [Option<Rc<TrieNode<String>>>; 26], // This would have to be a different implementation to generalize from lower case a-z strings
-    isterm: bool,
+    children: [Option<Rc<RefCell<TrieNode<String>>>>; 26], // This would have to be a different implementation to generalize from lower case a-z strings
+    // isterm: bool,
     value: String,
 }
 
 impl TrieNode<String> {
-    fn new() -> TrieNode<String> {
-        const CHILDREN_DEFAULT_VALUE: Option<Rc<TrieNode<String>>> = None;
+    fn new(val: String) -> TrieNode<String> {
+        const CHILDREN_DEFAULT_VALUE: Option<Rc<RefCell<TrieNode<String>>>> = None;
         TrieNode {
             children: [CHILDREN_DEFAULT_VALUE; 26],
-            isterm: true, // Not sure what is the logical default here
-            value: String::from(""),
+            // isterm: true, // Not sure what is the logical default here
+            value: val,
         }
     }
 
-    fn haschild(&self, c: char) -> bool {
+    fn has_child(&self, c: char) -> bool {
+        // let tmp = self.children[c as usize - 'a' as usize].clone();
         self.children[c as usize - 'a' as usize].is_some()
     }
 
-    fn get_child(&self, key: char) -> Option<Rc<TrieNode<String>>> {
+    fn get_child(&self, key: char) -> Option<Rc<RefCell<TrieNode<String>>>> {
         self.children[key as usize - 'a' as usize].clone()
     }
 }
 
 struct Trie<String> {
-    root: Option<Rc<TrieNode<String>>>,
+    root: Option<Rc<RefCell<TrieNode<String>>>>,
 }
 
 impl Trie<String> {
-    // fn new() -> Trie<String> {
-    //     Trie { root: None }
-    // }
-
-    fn isempty(&self) -> bool {
-        self.root.is_some()
+    fn new() -> Trie<String> {
+        Trie {
+            root: Some(Rc::new(RefCell::new(TrieNode::new(String::new())))),
+        }
     }
 
+    // fn isempty(&self) -> bool {
+    //     self.root.is_none()
+    // }
+
     fn insert(&mut self, data: String) {
-        if self.isempty() {
-            let mut new_root = TrieNode::new();
-            new_root.value = data;
-            self.root = Some(Rc::new(new_root));
-        } else {
-            let mut current = self.root.clone().unwrap();
-            for c in data.chars() {
-                // Just iterating over chars here, though actual intention would be grapheme clusters
-                if current.haschild(c) {
-                    current = current.get_child(c).clone().unwrap();
-                } else {
-                }
+        let mut current = self.root.clone().unwrap();
+        for c in data.chars() {
+            if current.borrow().has_child(c) {
+                let nxt = current.borrow().get_child(c).unwrap();
+                current = nxt;
+            } else {
+                let _ = current
+                    .borrow_mut()
+                    .children
+                    .get_mut(c as usize - 'a' as usize)
+                    .unwrap()
+                    .insert(Rc::new(RefCell::new(TrieNode::new(data.clone()))));
             }
         }
     }
 
-    fn find(&self, key: String) {}
+    fn find(&self, key: String) -> Option<String> {
+        let mut current = self.root.clone().unwrap();
+
+        for c in key.chars() {
+            if current.borrow().has_child(c) {
+                let nxt = current.borrow().get_child(c).unwrap();
+                current = nxt;
+            } else {
+                return None;
+            }
+        }
+        return Some(current.borrow().value.clone());
+    }
 }
 
 fn main() {
-    println!("Hello, world!");
+    let mut mytrie = Trie::new();
+    mytrie.insert(String::from("h"));
+    mytrie.insert(String::from("e"));
+    mytrie.insert(String::from("j"));
+    mytrie.insert(String::from("he"));
+    mytrie.insert(String::from("hej"));
+
+    let tst1 = mytrie.find(String::from("he"));
+    if tst1.is_some() {
+        println!("{}", tst1.unwrap());
+    } else {
+        println!(".find did not find!")
+    }
+
+    let tst2 =
+        &mytrie.root.clone().unwrap().borrow().children['h' as usize - 'a' as usize].is_some();
+    if *tst2 {
+        println!("root HAS child at index 'h'");
+    } else {
+        println!("root has NO child at index 'h'");
+    }
+
+    let tst3 = &mytrie.root.unwrap().borrow().has_child('h');
+    if *tst3 {
+        println!(".has_child found child at root index 'h'")
+    } else {
+        println!(".has_child did not find it")
+    }
 }
