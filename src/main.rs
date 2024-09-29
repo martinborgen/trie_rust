@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 // This is only for lowercase a-z at the moment.
 struct TrieNode<String> {
-    children: [Option<Rc<RefCell<TrieNode<String>>>>; 26], // This would have to be a different implementation to generalize from lower case a-z strings
+    children: [Option<Rc<RefCell<TrieNode<String>>>>; 26], // This would have to be a different implementation to generalize from not only lower case a-z strings
     isterm: bool,
     value: String,
 }
@@ -12,13 +12,12 @@ impl TrieNode<String> {
         const CHILDREN_DEFAULT_VALUE: Option<Rc<RefCell<TrieNode<String>>>> = None;
         TrieNode {
             children: [CHILDREN_DEFAULT_VALUE; 26],
-            isterm: true, // Not sure what is the logical default here
+            isterm: true,
             value: val,
         }
     }
 
     fn has_child(&self, c: char) -> bool {
-        // let tmp = self.children[c as usize - 'a' as usize].clone();
         self.children[c as usize - 'a' as usize].is_some()
     }
 
@@ -125,7 +124,12 @@ mod test {
 
         trie.insert(String::from("hi"));
 
-        assert!(trie.find(String::from("hi")).is_some());
+        assert_eq!(trie.find(String::from("hi")).unwrap(), String::from("hi"));
+        assert_eq!(
+            trie.find(String::from("hello")).unwrap(),
+            String::from("hello")
+        );
+        assert_eq!(trie.find(String::from("asdf")), None);
 
         assert!(trie.root.clone().unwrap().as_ref().borrow().has_child('h'));
 
