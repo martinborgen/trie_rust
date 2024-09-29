@@ -26,7 +26,7 @@ impl TrieNode<String> {
     }
 }
 
-struct Trie<String> {
+pub struct Trie<String> {
     root: Option<Rc<RefCell<TrieNode<String>>>>,
 }
 
