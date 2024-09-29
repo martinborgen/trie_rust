@@ -1,5 +1,5 @@
+#![allow(dead_code)]
 use std::{cell::RefCell, rc::Rc};
-
 // This is only for lowercase a-z at the moment.
 struct TrieNode<String> {
     children: [Option<Rc<RefCell<TrieNode<String>>>>; 26], // This would have to be a different implementation to generalize from not only lower case a-z strings
@@ -74,37 +74,6 @@ impl Trie<String> {
             }
         }
         return Some(current.borrow().value.clone());
-    }
-}
-
-fn main() {
-    let mut mytrie = Trie::new();
-    mytrie.insert(String::from("h"));
-    mytrie.insert(String::from("e"));
-    mytrie.insert(String::from("j"));
-    mytrie.insert(String::from("he"));
-    mytrie.insert(String::from("hej"));
-
-    let tst1 = mytrie.find(String::from("he"));
-    if tst1.is_some() {
-        println!("{}", tst1.unwrap());
-    } else {
-        println!(".find did not find!")
-    }
-
-    let tst2 =
-        &mytrie.root.clone().unwrap().borrow().children['h' as usize - 'a' as usize].is_some();
-    if *tst2 {
-        println!("root HAS child at index 'h'");
-    } else {
-        println!("root has NO child at index 'h'");
-    }
-
-    let tst3 = &mytrie.root.unwrap().borrow().has_child('h');
-    if *tst3 {
-        println!(".has_child found child at root index 'h'")
-    } else {
-        println!(".has_child did not find it")
     }
 }
 
