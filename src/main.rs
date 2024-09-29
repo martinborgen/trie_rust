@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 // This is only for lowercase a-z at the moment.
 struct TrieNode<String> {
     children: [Option<Rc<RefCell<TrieNode<String>>>>; 26], // This would have to be a different implementation to generalize from lower case a-z strings
-    // isterm: bool,
+    isterm: bool,
     value: String,
 }
 
@@ -12,7 +12,7 @@ impl TrieNode<String> {
         const CHILDREN_DEFAULT_VALUE: Option<Rc<RefCell<TrieNode<String>>>> = None;
         TrieNode {
             children: [CHILDREN_DEFAULT_VALUE; 26],
-            // isterm: true, // Not sure what is the logical default here
+            isterm: true, // Not sure what is the logical default here
             value: val,
         }
     }
@@ -38,17 +38,14 @@ impl Trie<String> {
         }
     }
 
-    // fn isempty(&self) -> bool {
-    //     self.root.is_none()
-    // }
+    fn isempty(&self) -> bool {
+        self.root.as_ref().unwrap().borrow().isterm
+    }
 
     fn insert(&mut self, data: String) {
         let mut current = self.root.clone().unwrap();
         for c in data.chars() {
-            if current.borrow().has_child(c) {
-                let nxt = current.borrow().get_child(c).unwrap();
-                current = nxt;
-            } else {
+            if !current.borrow().has_child(c) {
                 let _ = current
                     .borrow_mut()
                     .children
@@ -56,6 +53,13 @@ impl Trie<String> {
                     .unwrap()
                     .insert(Rc::new(RefCell::new(TrieNode::new(data.clone()))));
             }
+
+            if current.borrow().isterm {
+                current.borrow_mut().isterm = false;
+            }
+
+            let nxt = current.borrow().get_child(c).unwrap();
+            current = nxt;
         }
     }
 
@@ -102,5 +106,50 @@ fn main() {
         println!(".has_child found child at root index 'h'")
     } else {
         println!(".has_child did not find it")
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Trie;
+
+    #[test]
+    fn insert_and_find() {
+        let mut trie = Trie::new();
+
+        assert!(trie.isempty());
+
+        trie.insert(String::from("hello"));
+
+        assert!(!trie.isempty());
+
+        trie.insert(String::from("hi"));
+
+        assert!(trie.find(String::from("hi")).is_some());
+
+        assert!(trie.root.clone().unwrap().as_ref().borrow().has_child('h'));
+
+        assert!(trie
+            .root
+            .clone()
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .get_child('h')
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .has_child('e'));
+
+        assert!(trie
+            .root
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .get_child('h')
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .has_child('i'));
     }
 }
