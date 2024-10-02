@@ -12,7 +12,7 @@ impl TrieNode<String> {
         const CHILDREN_DEFAULT_VALUE: Option<Rc<RefCell<TrieNode<String>>>> = None;
         TrieNode {
             children: [CHILDREN_DEFAULT_VALUE; 26],
-            isterm: true,
+            isterm: false,
             value: val,
         }
     }
@@ -38,7 +38,12 @@ impl Trie<String> {
     }
 
     fn isempty(&self) -> bool {
-        self.root.as_ref().unwrap().borrow().isterm
+        for c in self.root.as_ref().unwrap().borrow().children.as_ref() {
+            if c.is_some() {
+                return false;
+            }
+        }
+        true
     }
 
     fn insert(&mut self, data: String) {
@@ -53,13 +58,11 @@ impl Trie<String> {
                     .insert(Rc::new(RefCell::new(TrieNode::new(data.clone()))));
             }
 
-            if current.borrow().isterm {
-                current.borrow_mut().isterm = false;
-            }
-
             let nxt = current.borrow().get_child(c).unwrap();
             current = nxt;
         }
+
+        current.borrow_mut().isterm = true;
     }
 
     fn find(&self, key: String) -> Option<String> {
@@ -73,7 +76,12 @@ impl Trie<String> {
                 return None;
             }
         }
-        return Some(current.borrow().value.clone());
+
+        if current.borrow().isterm {
+            Some(current.borrow().value.clone())
+        } else {
+            None
+        }
     }
 }
 
@@ -100,6 +108,8 @@ mod test {
         );
         assert_eq!(trie.find(String::from("asdf")), None);
 
+        assert_eq!(trie.find(String::from("hel")), None);
+
         assert!(trie.root.clone().unwrap().as_ref().borrow().has_child('h'));
 
         assert!(trie
@@ -114,8 +124,27 @@ mod test {
             .borrow()
             .has_child('e'));
 
+        assert_eq!(
+            trie.root
+                .clone()
+                .unwrap()
+                .as_ref()
+                .borrow()
+                .get_child('h')
+                .unwrap()
+                .as_ref()
+                .borrow()
+                .get_child('e')
+                .unwrap()
+                .as_ref()
+                .borrow()
+                .isterm,
+            false
+        );
+
         assert!(trie
             .root
+            .clone()
             .unwrap()
             .as_ref()
             .borrow()
@@ -124,5 +153,22 @@ mod test {
             .as_ref()
             .borrow()
             .has_child('i'));
+
+        assert_eq!(
+            trie.root
+                .unwrap()
+                .as_ref()
+                .borrow()
+                .get_child('h')
+                .unwrap()
+                .as_ref()
+                .borrow()
+                .get_child('i')
+                .unwrap()
+                .as_ref()
+                .borrow()
+                .isterm,
+            true
+        );
     }
 }
