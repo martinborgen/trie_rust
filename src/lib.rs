@@ -116,7 +116,6 @@ impl Trie<String> {
         current = path.pop_back().unwrap();
 
         current.borrow_mut().value = String::new(); // Clear the value. Make method?
-        assert!(current.borrow().isterm);
         current.borrow_mut().isterm = false;
         if current.borrow().has_children() {
             return;
@@ -140,7 +139,7 @@ mod test {
     use super::Trie;
 
     #[test]
-    fn insert_and_find() {
+    fn insert() {
         let mut trie = Trie::new();
 
         assert!(trie.isempty());
@@ -151,15 +150,7 @@ mod test {
 
         trie.insert(String::from("hi"));
 
-        assert_eq!(trie.find(String::from("hi")).unwrap(), String::from("hi"));
-        assert_eq!(
-            trie.find(String::from("hello")).unwrap(),
-            String::from("hello")
-        );
-        assert_eq!(trie.find(String::from("asdf")), None);
-
-        assert_eq!(trie.find(String::from("hel")), None);
-
+        // Verification of how nodes are put in tree
         assert!(trie.root.clone().unwrap().as_ref().borrow().has_child('h'));
 
         assert!(trie
@@ -240,8 +231,44 @@ mod test {
                 .isterm,
             true
         );
+    }
+
+    #[test]
+    fn find() {
+        let mut trie = Trie::new();
+        assert!(trie.isempty());
+        trie.insert(String::from("hello"));
+        assert!(!trie.isempty());
+        trie.insert(String::from("hi"));
+
+        assert_eq!(trie.find(String::from("hi")).unwrap(), String::from("hi"));
+        assert_eq!(
+            trie.find(String::from("hello")).unwrap(),
+            String::from("hello")
+        );
+        assert_eq!(trie.find(String::from("asdf")), None);
+
+        assert_eq!(trie.find(String::from("hel")), None);
+    }
+
+    #[test]
+    fn delete() {
+        let mut trie = Trie::new();
+        assert!(trie.isempty());
+        trie.insert(String::from("hello"));
+        assert!(!trie.isempty());
+
+        trie.insert(String::from("hi"));
 
         trie.delete(String::from("hi"));
+        assert_eq!(trie.find(String::from("hi")), None);
+
+        // Idea to get tree with multiple children of same node,
+        // to ensure delete of parent does not conflict with children,
+        // or deletion of child does not affect parent or siblings
+        trie.insert(String::from("hell"));
+        trie.insert(String::from("helluva"));
+        trie.insert(String::from("hiphop"));
 
         assert_eq!(trie.find(String::from("hi")), None);
         assert!(trie.find(String::from("hello")).is_some());
@@ -249,5 +276,14 @@ mod test {
             trie.find(String::from("hello")).unwrap(),
             String::from("hello")
         );
+
+        trie.delete(String::from("hell"));
+        assert_eq!(trie.find(String::from("hell")), None);
+        assert!(trie.find(String::from("hello")).is_some());
+        assert_eq!(
+            trie.find(String::from("hello")).unwrap(),
+            String::from("hello")
+        );
+        assert!(trie.find(String::from("helluva")).is_some());
     }
 }
